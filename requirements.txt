@@ -1,0 +1,6 @@
+# Deadhead — Python deps. Requires Python >= 3.10 (hydradb-sdk constraint).
+hydradb-sdk>=2,<3        # memory layer SDK (pulls httpx, pydantic, anyio, etc.)
+fastapi>=0.138,<1        # backend web framework
+uvicorn[standard]>=0.49  # ASGI server
+# Claude reasoning runs through OpenRouter's OpenAI-compatible API via httpx
+# (httpx is already pulled in by hydradb-sdk).

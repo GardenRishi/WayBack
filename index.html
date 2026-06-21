@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deadhead</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root {
+    --bg: #0e1116; --card: #171b22; --line: #262c36; --ink: #e8ecf2;
+    --muted: #9aa6b6; --accent: #5b9dff; --good: #2fbf71; --bad: #f0623f;
+    --warn: #f0a83f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center;
+  }
+  #app { width: 100%; max-width: 440px; min-height: 100vh; padding: 22px 16px 40px; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: .3px; }
+  header p { margin: 2px 0 18px; color: var(--muted); font-size: 13px; }
+  .hidden { display: none !important; }
+
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+  label { font-size: 13px; color: var(--muted); }
+  input {
+    width: 100%; margin: 8px 0 14px; padding: 13px; font-size: 16px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px; color: var(--ink);
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: 8px; align-items: flex-end; }
+  .row input { margin-bottom: 0; }
+  .btn {
+    padding: 13px 16px; border: none; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer;
+    background: var(--card); color: var(--ink); border: 1px solid var(--line); white-space: nowrap;
+  }
+  .primary { width: 100%; margin-top: 14px; background: var(--accent); color: #04122e; border: none; }
+  .primary:disabled { opacity: .45; cursor: default; }
+
+  #map { height: 280px; border-radius: 14px; margin: 6px 0 4px; border: 1px solid var(--line); }
+  #routemap { height: 180px; border-radius: 12px; margin: 12px 0 4px; border: 1px solid var(--line); }
+  .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+  .geo-ok { color: var(--good); }
+  .geo-bad { color: var(--bad); }
+
+  /* driver screen top bar */
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
+  .topbar .who { font-weight: 700; font-size: 15px; flex: 1; }
+  .topbar .who span { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .topbar-btns { display: flex; gap: 6px; }
+  .topbar-btns button {
+    background: none; border: 1px solid var(--line); color: var(--accent); cursor: pointer;
+    font-size: 12px; border-radius: 8px; padding: 5px 10px; font-weight: 600;
+  }
+  .topbar-btns button:hover { background: rgba(91,157,255,.1); }
+
+  .pickup { font-size: 18px; font-weight: 700; }
+  .route { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .memtag {
+    display: inline-block; margin: 12px 0 4px; font-size: 12px; color: var(--accent);
+    background: rgba(91,157,255,.12); padding: 3px 9px; border-radius: 999px;
+  }
+  .why { margin: 8px 0 14px; font-size: 16px; }
+  .why .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 14px 0 16px; }
+  .stat { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .stat b { display: block; font-size: 16px; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .actions { display: flex; gap: 10px; }
+  .actions button { flex: 1; padding: 14px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .accept { background: var(--good); color: #042913; }
+  .skip { background: transparent; color: var(--bad); border: 1px solid var(--bad) !important; }
+  button:disabled { opacity: .5; cursor: default; }
+  .toast { margin-top: 14px; text-align: center; font-size: 13px; color: var(--muted); min-height: 18px; }
+  .muted { color: var(--muted); }
+
+  /* dashboard */
+  .dash-header { margin-bottom: 18px; }
+  .dash-header h2 { margin: 0 0 10px; font-size: 20px; }
+  .dash-back { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 13px; padding: 0; margin-bottom: 12px; display: block; }
+  .dash-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    font-size: 12px; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .pill.active-pill { color: var(--warn); border-color: var(--warn); background: rgba(240,168,63,.1); }
+  .pill.done-pill { color: var(--good); border-color: var(--good); background: rgba(47,191,113,.1); }
+  .pill.earn-pill { color: var(--accent); border-color: var(--accent); background: rgba(91,157,255,.1); }
+
+  .dash-section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted);
+    margin: 20px 0 10px;
+  }
+  .delivery-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px; margin-bottom: 10px;
+  }
+  .delivery-card.completed { opacity: .6; }
+  .delivery-card .dc-pickup { font-weight: 700; font-size: 15px; }
+  .delivery-card .dc-dropoff { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .delivery-card .dc-meta { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--bg); border: 1px solid var(--line);
+  }
+  .badge.payout { color: var(--good); border-color: var(--good); }
+  .badge.weight { color: var(--muted); }
+  .badge.hour { color: var(--accent); }
+  .badge.ts { color: var(--muted); font-weight: 400; }
+  .btn-complete {
+    margin-top: 12px; width: 100%; padding: 11px; border-radius: 10px; border: none;
+    background: var(--accent); color: #04122e; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-complete:disabled { opacity: .5; cursor: default; }
+  .empty-state { text-align: center; color: var(--muted); font-size: 14px; padding: 24px 0; }
+  .dash-refresh {
+    background: none; border: 1px solid var(--line); color: var(--muted); cursor: pointer;
+    font-size: 12px; border-radius: 8px; padding: 5px 10px; margin-left: 8px;
+  }
+</style>
+</head>
+<body>
+<main id="app">
+  <header>
+    <h1>Deadhead</h1>
+    <p>Heading home empty around Dublin? Tell me where home is and where you are now — I'll learn your lane.</p>
+  </header>
+
+  <!-- Screen 1: who + where -->
+  <section id="signin" class="panel">
+    <label for="name">Your name</label>
+    <input id="name" autocomplete="given-name" placeholder="e.g. Anirudha" />
+
+    <label for="home">Home address</label>
+    <div class="row">
+      <input id="home" autocomplete="street-address" placeholder="7950 Dublin Blvd, Dublin, CA 94568" />
+      <button class="btn" id="findHome">Find</button>
+    </div>
+    <p class="hint" id="homeStatus">I'll route drop-offs toward home.</p>
+
+    <label>Drop a pin on your current location</label>
+    <div id="map"></div>
+    <p class="hint" id="pinStatus">Tap the map to set where you are right now.</p>
+
+    <button class="primary" id="start" disabled>Start driving</button>
+    <p class="hint" style="margin-top:12px">
+      No password — I keep a separate memory per name. Use the same name next time and
+      I'll remember what you grab; a different name starts fresh.
+    </p>
+  </section>
+
+  <!-- Screen 2: recommendation -->
+  <section id="driver" class="hidden">
+    <div class="topbar">
+      <div class="who" id="who"></div>
+      <div class="topbar-btns">
+        <button id="btn-dashboard">Dashboard</button>
+        <button id="switch">Switch</button>
+      </div>
+    </div>
+    <div id="card" class="panel"><span class="muted">Loading…</span></div>
+    <div id="toast" class="toast"></div>
+  </section>
+
+  <!-- Screen 3: dashboard -->
+  <section id="dashboard" class="hidden">
+    <div class="dash-header">
+      <button class="dash-back" id="dash-back">← Back to runs</button>
+      <h2>My Deliveries</h2>
+      <div style="display:flex;align-items:center">
+        <div class="dash-pills" id="dash-pills"></div>
+        <button class="dash-refresh" id="dash-refresh">Refresh</button>
+      </div>
+    </div>
+
+    <div class="dash-section-title">Active</div>
+    <div id="dash-active"></div>
+
+    <div class="dash-section-title">Completed</div>
+    <div id="dash-completed"></div>
+  </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const API = location.protocol.startsWith("http") ? "" : "http://localhost:8000";
+  const $ = (id) => document.getElementById(id);
+  const DUBLIN = [37.7022, -121.9358];
+
+  const LS = {
+    get name() { return localStorage.getItem("dh_name") || ""; },
+    get home() { return JSON.parse(localStorage.getItem("dh_home") || "null"); },
+    get cur() { return JSON.parse(localStorage.getItem("dh_cur") || "null"); },
+    save(name, home, cur) {
+      localStorage.setItem("dh_name", name);
+      localStorage.setItem("dh_home", JSON.stringify(home));
+      localStorage.setItem("dh_cur", JSON.stringify(cur));
+    },
+    clear() {
+      ["dh_name","dh_home","dh_cur"].forEach(k => localStorage.removeItem(k));
+    },
+  };
+
+  let state = { name: "", home: null, cur: null, current: null,
+                decided: new Set(), phase: "", last: "" };
+  let signMap, homeMarker, curMarker, routeMap;
+
+  // --- screen routing ---
+  function show(screen) {
+    ["signin","driver","dashboard"].forEach(s =>
+      $(s).classList.toggle("hidden", s !== screen));
+  }
+  function toast(m) { $("toast").textContent = m || ""; }
+
+  function refreshStartBtn() {
+    $("start").disabled = !($("name").value.trim() && state.home && state.cur);
+  }
+
+  // --- sign-in map ---
+  function initSignMap() {
+    if (signMap) { signMap.invalidateSize(); return; }
+    signMap = L.map("map").setView(DUBLIN, 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, attribution: "© OpenStreetMap",
+    }).addTo(signMap);
+    signMap.on("click", (e) => setCurrent(e.latlng.lat, e.latlng.lng));
+    setTimeout(() => signMap.invalidateSize(), 200);
+  }
+  function setCurrent(lat, lng) {
+    state.cur = { lat, lng };
+    if (!curMarker) curMarker = L.marker([lat, lng]).addTo(signMap).bindPopup("You are here");
+    else curMarker.setLatLng([lat, lng]);
+    $("pinStatus").innerHTML = `<span class="geo-ok">📍 current location set (${lat.toFixed(4)}, ${lng.toFixed(4)})</span>`;
+    refreshStartBtn();
+  }
+  function setHomeMarker(lat, lng, label) {
+    if (!homeMarker) homeMarker = L.marker([lat, lng], { opacity: 0.85 }).addTo(signMap);
+    else homeMarker.setLatLng([lat, lng]);
+    homeMarker.bindPopup("🏠 " + label);
+    signMap.setView([lat, lng], 13);
+  }
+
+  async function geocode(addr) {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`;
+    const r = await fetch(url, { headers: { "Accept": "application/json" } });
+    const j = await r.json();
+    if (!j.length) throw new Error("address not found");
+    return { lat: parseFloat(j[0].lat), lng: parseFloat(j[0].lon), label: j[0].display_name };
+  }
+
+  async function findHome() {
+    const addr = $("home").value.trim();
+    if (!addr) return;
+    $("homeStatus").textContent = "Looking up…";
+    try {
+      const g = await geocode(addr);
+      state.home = { label: $("home").value.trim(), lat: g.lat, lng: g.lng };
+      $("homeStatus").innerHTML = `<span class="geo-ok">🏠 found: ${g.label}</span>`;
+      setHomeMarker(g.lat, g.lng, state.home.label);
+      refreshStartBtn();
+    } catch (e) {
+      state.home = null;
+      $("homeStatus").innerHTML = `<span class="geo-bad">Couldn't find that address — try adding city/zip.</span>`;
+      refreshStartBtn();
+    }
+  }
+
+  function start() {
+    const name = $("name").value.trim();
+    if (!name || !state.home || !state.cur) return;
+    state.name = name;
+    LS.save(name, state.home, state.cur);
+    enter();
+  }
+  function switchDriver() {
+    LS.clear();
+    state = { name: "", home: null, cur: null, current: null, decided: new Set(), phase: "", last: "" };
+    curMarker = homeMarker = null;
+    $("name").value = ""; $("home").value = "";
+    $("homeStatus").textContent = "I'll route drop-offs toward home.";
+    $("pinStatus").textContent = "Tap the map to set where you are right now.";
+    show("signin");
+    initSignMap();
+    refreshStartBtn();
+  }
+
+  function enter() {
+    $("who").innerHTML = `${state.name} <span>· 🏠 ${state.home.label.split(",").slice(0,2).join(",")}</span>`;
+    show("driver");
+    loadRecommendation();
+  }
+
+  // --- recommendation ---
+  async function loadRecommendation() {
+    $("card").innerHTML = '<span class="muted">Thinking about your next run…</span>';
+    toast("");
+    const q = new URLSearchParams({
+      user: state.name, home: state.home.label,
+      hlat: state.home.lat, hlng: state.home.lng,
+      clat: state.cur.lat, clng: state.cur.lng,
+      exclude: [...state.decided].join(","), after: state.phase, last: state.last,
+    });
+    try {
+      const r = await fetch(`${API}/recommend?${q}`);
+      if (!r.ok) throw new Error(await r.text());
+      state.current = await r.json();
+      if (state.current.done) renderDone(state.current);
+      else renderCard(state.current);
+    } catch (e) {
+      $("card").innerHTML = `<span class="muted">Couldn't load: ${e.message}</span>`;
+    }
+  }
+
+  function renderDone(rec) {
+    $("card").innerHTML = `
+      <div class="pickup">All caught up 🎉</div>
+      <div class="why" style="margin-top:10px">${rec.message}</div>
+      <p class="muted" style="font-size:13px">I've remembered all ${state.decided.size} of your calls — they'll shape what I suggest next time.</p>
+      <div class="actions"><button class="accept" id="btn-again" style="background:var(--accent);color:#04122e">See nearby runs again</button></div>`;
+    $("btn-again").onclick = () => { state.decided = new Set(); state.phase = ""; state.last = ""; loadRecommendation(); };
+  }
+
+  function renderCard(rec) {
+    const j = rec.job, n = rec.history.length;
+    const memTag = n > 0
+      ? `<span class="memtag">★ I remember ${n} of your past ${n === 1 ? "run" : "runs"}</span>`
+      : `<span class="memtag" style="color:var(--muted);background:rgba(154,166,182,.12)">first run — I'll start learning your lane</span>`;
+    $("card").innerHTML = `
+      <div class="pickup">${j.pickup}</div>
+      <div class="route">→ drop in ${j.dropoff} · ${j.dropoff_mi} mi from home</div>
+      ${memTag}
+      <div class="why"><span class="label">Why this one for you</span><br>${rec.reason}</div>
+      <div id="routemap"></div>
+      <div class="stats">
+        <div class="stat"><b>${j.detour_min}m</b><span>detour</span></div>
+        <div class="stat"><b>${j.weight_lbs} lb</b><span>weight</span></div>
+        <div class="stat"><b>$${j.payout}</b><span>payout</span></div>
+        <div class="stat"><b>${j.dropoff_mi} mi</b><span>from home</span></div>
+        <div class="stat"><b>${j.hour}:00</b><span>drop time</span></div>
+        <div class="stat"><b>${j.to_pickup_mi} mi</b><span>to pickup</span></div>
+      </div>
+      <div class="actions">
+        <button class="accept" id="btn-accept">Accept</button>
+        <button class="skip" id="btn-skip">Skip</button>
+      </div>`;
+    $("btn-accept").onclick = () => decide("accept");
+    $("btn-skip").onclick = () => decide("skip");
+    drawRoute(rec);
+  }
+
+  function drawRoute(rec) {
+    if (routeMap) { routeMap.remove(); routeMap = null; }
+    const j = rec.job;
+    routeMap = L.map("routemap", { zoomControl: false, attributionControl: false });
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(routeMap);
+    const home = rec.home_ll, cur = rec.current_ll, pick = j.pickup_ll, drop = j.dropoff_ll;
+    const dot = (ll, color, label) =>
+      L.circleMarker(ll, { radius: 7, color, fillColor: color, fillOpacity: 1, weight: 2 })
+        .addTo(routeMap).bindPopup(label);
+    dot(cur, "#2fbf71", "You are here");
+    dot(pick, "#f0a83f", "Pickup: " + j.pickup);
+    dot(drop, "#f0623f", "Drop: " + j.dropoff);
+    dot(home, "#5b9dff", "🏠 Home");
+    L.polyline([cur, pick, drop, home], { color: "#5b9dff", weight: 3, opacity: 0.7, dashArray: "5,6" }).addTo(routeMap);
+    routeMap.fitBounds(L.latLngBounds([cur, pick, drop, home]).pad(0.25));
+    setTimeout(() => routeMap.invalidateSize(), 150);
+  }
+
+  async function decide(action) {
+    if (!state.current) return;
+    const j = state.current.job;
+    for (const b of document.querySelectorAll(".actions button")) b.disabled = true;
+    toast(`Saving "${action}" to your memory…`);
+    try {
+      const r = await fetch(`${API}/decision`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: state.name, job_id: j.id, action, detour_min: j.detour_min, dropoff_mi: j.dropoff_mi }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      state.decided.add(j.id);
+      state.phase = action;
+      state.last = j.id;
+      toast(action === "accept"
+        ? `Nice — grabbed ${j.pickup}. Want another?`
+        : `Skipped ${j.pickup}. Here's a different one…`);
+      await loadRecommendation();
+    } catch (e) {
+      toast("Error: " + e.message);
+      for (const b of document.querySelectorAll(".actions button")) b.disabled = false;
+    }
+  }
+
+  // --- dashboard ---
+  function fmtTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+
+  async function loadDashboard() {
+    $("dash-active").innerHTML = '<span class="muted" style="font-size:13px">Loading…</span>';
+    $("dash-completed").innerHTML = "";
+    $("dash-pills").innerHTML = "";
+    try {
+      const r = await fetch(`${API}/deliveries?user=${encodeURIComponent(state.name)}`);
+      if (!r.ok) throw new Error(await r.text());
+      const data = await r.json();
+      renderDashboard(data);
+    } catch (e) {
+      $("dash-active").innerHTML = `<span class="muted" style="font-size:13px">Error: ${e.message}</span>`;
+    }
+  }
+
+  function renderDashboard(data) {
+    const { active, completed, total_earned } = data;
+
+    // pills
+    $("dash-pills").innerHTML = `
+      <span class="pill active-pill">${active.length} active</span>
+      <span class="pill done-pill">${completed.length} completed</span>
+      <span class="pill earn-pill">$${total_earned} earned</span>`;
+
+    // active deliveries
+    if (active.length === 0) {
+      $("dash-active").innerHTML = `<div class="empty-state">No active deliveries — accept a run to see it here.</div>`;
+    } else {
+      $("dash-active").innerHTML = active.map(d => `
+        <div class="delivery-card" id="dc-${d.id}">
+          <div class="dc-pickup">${d.pickup}</div>
+          <div class="dc-dropoff">→ ${d.dropoff}</div>
+          <div class="dc-meta">
+            <span class="badge payout">$${d.payout}</span>
+            <span class="badge weight">${d.weight_lbs} lbs</span>
+            <span class="badge hour">${d.hour}:00 drop</span>
+            <span class="badge ts">Accepted ${fmtTime(d.accepted_at)}</span>
+          </div>
+          <button class="btn-complete" data-id="${d.id}" onclick="completeDelivery('${d.id}', this)">
+            Mark as Completed ✓
+          </button>
+        </div>`).join("");
+    }
+
+    // completed deliveries
+    if (completed.length === 0) {
+      $("dash-completed").innerHTML = `<div class="empty-state">No completed deliveries yet.</div>`;
+    } else {
+      // show most recent first
+      const sorted = [...completed].sort((a, b) => (b.completed_at || "").localeCompare(a.completed_at || ""));
+      $("dash-completed").innerHTML = sorted.map(d => `
+        <div class="delivery-card completed">
+          <div class="dc-pickup">${d.pickup}</div>
+          <div class="dc-dropoff">→ ${d.dropoff}</div>
+          <div class="dc-meta">
+            <span class="badge payout">$${d.payout}</span>
+            <span class="badge weight">${d.weight_lbs} lbs</span>
+            <span class="badge hour">${d.hour}:00 drop</span>
+            <span class="badge ts">Done ${fmtTime(d.completed_at)}</span>
+          </div>
+        </div>`).join("");
+    }
+  }
+
+  async function completeDelivery(deliveryId, btn) {
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    try {
+      const r = await fetch(`${API}/delivery/complete`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: state.name, delivery_id: deliveryId }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await loadDashboard();
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = "Mark as Completed ✓";
+      alert("Error: " + e.message);
+    }
+  }
+
+  // --- wiring ---
+  $("findHome").onclick = findHome;
+  $("home").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); findHome(); } });
+  $("name").addEventListener("input", refreshStartBtn);
+  $("start").onclick = start;
+  $("switch").onclick = switchDriver;
+  $("btn-dashboard").onclick = () => { show("dashboard"); loadDashboard(); };
+  $("dash-back").onclick = () => show("driver");
+  $("dash-refresh").onclick = loadDashboard;
+
+  // resume if we already know this driver
+  if (LS.name && LS.home && LS.cur) {
+    state.name = LS.name; state.home = LS.home; state.cur = LS.cur;
+    enter();
+  } else {
+    if (LS.name) $("name").value = LS.name;
+    show("signin");
+    initSignMap();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+{
+  "rishi": [
+    {
+      "id": "d293b05a",
+      "job_id": "sprouts",
+      "pickup": "Sprouts Farmers Market, Dublin",
+      "dropoff": "Sorrento, Dublin",
+      "payout": 13,
+      "weight_lbs": 9,
+      "hour": 13,
+      "status": "completed",
+      "accepted_at": "2026-06-21T21:16:24.625133+00:00",
+      "completed_at": "2026-06-21T21:16:59.624047+00:00"
+    },
+    {
+      "id": "9f4190e3",
+      "job_id": "starbucks_dub",
+      "pickup": "Starbucks, Dublin Blvd",
+      "dropoff": "Downtown Dublin",
+      "payout": 8,
+      "weight_lbs": 3,
+      "hour": 8,
+      "status": "completed",
+      "accepted_at": "2026-06-21T21:49:54.528937+00:00",
+      "completed_at": "2026-06-21T21:50:05.741675+00:00"
+    }
+  ],
+  "john": [
+    {
+      "id": "fe3371b9",
+      "job_id": "safeway_dub",
+      "pickup": "Safeway, Dublin Village Center",
+      "dropoff": "Heritage Park, Dublin",
+      "payout": 14,
+      "weight_lbs": 18,
+      "hour": 16,
+      "status": "completed",
+      "accepted_at": "2026-06-21T21:31:15.671038+00:00",
+      "completed_at": "2026-06-21T21:31:51.059872+00:00"
+    },
+    {
+      "id": "4e063672",
+      "job_id": "sprouts",
+      "pickup": "Sprouts Farmers Market, Dublin",
+      "dropoff": "Sorrento, Dublin",
+      "payout": 13,
+      "weight_lbs": 9,
+      "hour": 13,
+      "status": "completed",
+      "accepted_at": "2026-06-21T21:31:43.444166+00:00",
+      "completed_at": "2026-06-21T21:31:52.093235+00:00"
+    },
+    {
+      "id": "517b6491",
+      "job_id": "cvs_dublin",
+      "pickup": "CVS Pharmacy, Dublin Blvd",
+      "dropoff": "Donlon, Dublin",
+      "payout": 9,
+      "weight_lbs": 4,
+      "hour": 9,
+      "status": "completed",
+      "accepted_at": "2026-06-21T21:33:45.579006+00:00",
+      "completed_at": "2026-06-21T21:33:49.459498+00:00"
+    },
+    {
+      "id": "9e752a9c",
+      "job_id": "sprouts",
+      "pickup": "Sprouts Farmers Market, Dublin",
+      "dropoff": "Sorrento, Dublin",
+      "payout": 13,
+      "weight_lbs": 9,
+      "hour": 13,
+      "status": "accepted",
+      "accepted_at": "2026-06-21T21:48:49.282661+00:00",
+      "completed_at": null
+    }
+  ],
+  "anirudha": [
+    {
+      "id": "b22583ac",
+      "job_id": "cvs_dublin",
+      "pickup": "CVS Pharmacy, Dublin Blvd",
+      "dropoff": "Donlon, Dublin",
+      "payout": 9,
+      "weight_lbs": 4,
+      "hour": 9,
+      "status": "accepted",
+      "accepted_at": "2026-06-21T21:32:44.904776+00:00",
+      "completed_at": null
+    },
+    {
+      "id": "959b8e17",
+      "job_id": "sprouts",
+      "pickup": "Sprouts Farmers Market, Dublin",
+      "dropoff": "Sorrento, Dublin",
+      "payout": 13,
+      "weight_lbs": 9,
+      "hour": 13,
+      "status": "accepted",
+      "accepted_at": "2026-06-21T21:32:48.592495+00:00",
+      "completed_at": null
+    },
+    {
+      "id": "a39e0016",
+      "job_id": "starbucks_dub",
+      "pickup": "Starbucks, Dublin Blvd",
+      "dropoff": "Downtown Dublin",
+      "payout": 8,
+      "weight_lbs": 3,
+      "hour": 8,
+      "status": "accepted",
+      "accepted_at": "2026-06-21T21:33:05.639048+00:00",
+      "completed_at": null
+    }
+  ]
+}
