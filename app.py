@@ -282,7 +282,7 @@ def _ask_claude(name: str, home_label: str, history: list[dict], enriched: list[
             OPENROUTER_URL,
             headers={
                 "Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}",
-                "X-OpenRouter-Title": "Deadhead",
+                "X-OpenRouter-Title": "WayBack",
             },
             json={
                 "model": CLAUDE_MODEL,
@@ -420,7 +420,7 @@ try:
 except ImportError:  # allow importing this module for non-web tests
     FastAPI = None
 
-app = FastAPI(title="Deadhead") if FastAPI else None
+app = FastAPI(title="WayBack") if FastAPI else None
 INDEX_HTML = Path(__file__).parent / "index.html"
 
 
